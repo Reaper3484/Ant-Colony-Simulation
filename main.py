@@ -8,6 +8,7 @@ width = 1200
 height = 800
 cell_size = 10
 no_pheremone_color = 'white'
+no_of_ants = 500
 ant_size = 5
 ant_color = 'red'
 ant_speed = 4
@@ -36,10 +37,23 @@ class Ant(Sprite):
         self.vector = normalize_vector((self.vector[0] + random.randint(-ant_randomness, ant_randomness)/100,
                                        self.vector[1] + random.randint(-ant_randomness, ant_randomness)/100))
 
+        prev_pos = self.rect.center 
         self.rect.move_ip(self.vector[0] * ant_speed, self.vector[1] * ant_speed)
+
+        if self.rect.collidedict(obstacle_group.spritedict):
+            self.rect.center = prev_pos
+            self.vector = [self.vector[0] * -1, self.vector[1] * -1]
 
     def update(self):
         self.move()
+
+
+class Obstacle(Sprite):
+    def __init__(self, size, topleft_coord):
+        super().__init__()
+        self.image = pygame.Surface(size)
+        self.image.fill('brown')
+        self.rect = self.image.get_rect(topleft=topleft_coord)
 
 
 def normalize_vector(vector):
@@ -52,16 +66,26 @@ def normalize_vector(vector):
         return vector
 
 
-ant_group = Group()
-ant = Ant()
-ant_group.add(ant)
-
 # Make grid
 grid_group = Group()
 for i in range(0, width, cell_size):
     for j in range(0, height, cell_size):
         cell = Cell(i, j)
         grid_group.add(cell)
+
+# Add obstacles
+obstacle_group = Group()
+top_obs = Obstacle((width, ant_size+1), (0, -ant_size-1))
+bottom_obs = Obstacle((width, ant_size+1), (0, height))
+left_obs = Obstacle((ant_size+1, height), (-ant_size-1, 0))
+right_obs = Obstacle((ant_size+1, height), (width, 0))
+obstacle_group.add(top_obs, bottom_obs, left_obs, right_obs)
+
+# Add ants
+ant_group = Group()
+for _ in range(no_of_ants):
+    ant = Ant()
+    ant_group.add(ant)
 
 clock = pygame.time.Clock()
 running = True
@@ -73,6 +97,7 @@ while running:
 
     screen.fill('pink')
     grid_group.draw(screen)
+    obstacle_group.draw(screen)
     ant_group.draw(screen)
     ant_group.update()
 
